@@ -1,0 +1,21 @@
+{
+  "name": "tail-stream",
+  "version": "0.0.1",
+  "description": "streamified *nix tail",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/juul/tail-stream.git"
+  },
+  "keywords": [
+    "tail",
+    "stream",
+    "changes"
+  ],
+  "author": {
+    "name": "Marc Juul",
+    "email": "juul@sudomesh.org",
+    "url": "https://sudoroom.org/wiki/User:Juul"
+  },
+  "license": "GPLv3"
+}
