@@ -64,9 +64,9 @@ tstream.on('error', function(err) {
 
 # FAQ
 
-## What happen if the file is deleted? ##
+## What happens if the file is deleted? ##
 
-If endOnError is set, then the stream ends and if an event listener is registered for the error event, and error event i emitted.
+If endOnError is set, then the stream ends and if an event listener is registered for the error event, an error event is emitted.
 
 If endOnError is not set, then an error event is emittted, whether or not a handler is registered.
 
@@ -74,7 +74,7 @@ If endOnError is not set, then an error event is emittted, whether or not a hand
 
 If fs.watch is not available, then this is detected as a file deletion.
 
-If fs.watch _is_ available and truncate detections is enabled, then errors occur (and the stream is closed if endOnError is set).
+If fs.watch _is_ available and truncate detection is enabled, then errors occur (and the stream is closed if endOnError is set).
 
 If fs.watch is available and truncate detection is _disabled_ then moving the file will not disrupt the stream.
 
