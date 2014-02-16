@@ -12,6 +12,7 @@ function TailStream(path, opts) {
     this.buffer = Buffer(16 * 1024);
 
     this.opts = {
+        beginAt: 0,
         detectTruncate: true,
         onTruncate: 'end', // or 'reset' to seek to beginning of file
         endOnError: true
@@ -24,6 +25,7 @@ function TailStream(path, opts) {
 
     this.fd = fs.openSync(path, 'r');
     this.dataAvailable = true;
+    this.firstRead = true;
 
     this.waitForMoreData = function() {
         if(this.watcher) {
@@ -80,7 +82,7 @@ function TailStream(path, opts) {
             return this.push('');
         }
             
-        if(this.opts.detectTruncate) {
+        if(this.opts.detectTruncate || (this.firstRead && (this.opts.beginAt == 'end'))) {
             // check for truncate
             fs.stat(this.path, this._readCont.bind(this));
         } else {
@@ -101,7 +103,19 @@ function TailStream(path, opts) {
             stat = null;
         }
 
-        if(stat) { // detect truncate
+        if(stat) {
+
+            // seek to end of file
+            if(this.firstRead && (this.opts.beginAt == 'end')) {
+                this.bytesRead = stat.size;
+                this.dataAvailable = false;
+                this.waitForMoreData();
+                this.push('');
+                this.firstRead = false;
+                return;
+            } 
+
+            // truncate detection
             if(!this.lastSize) {
                 this.lastSize = stat.size;
             } else {
@@ -116,6 +130,14 @@ function TailStream(path, opts) {
                 }
             }
             this.lastSize = stat.size;
+        }
+
+        // seek to desired start position
+        if(this.firstRead) {
+            if(parseInt(this.opts.beginAt) > 0) {
+                this.bytesRead = parseInt(this.opts.beginAt);
+            }
+            this.firstRead = false;
         }
 
         fs.read(this.fd, this.buffer, 0, this.buffer.length, this.bytesRead, function(err, bytesRead, buffer) {

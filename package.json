@@ -1,7 +1,7 @@
 {
   "name": "tail-stream",
-  "version": "0.1.0",
-  "description": "streamified *nix tail",
+  "version": "0.1.1",
+  "description": "Like 'tail -f' but a stream.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -9,7 +9,10 @@
   },
   "keywords": [
     "tail",
+    "follow",
     "stream",
+    "file",
+    "read",
     "changes"
   ],
   "author": {

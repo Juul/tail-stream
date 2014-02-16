@@ -1,11 +1,12 @@
 # About #
 
-Tail stream has one function: ts.createReadStream which is like fs.createReadStream, but does not stop reading the file when end of file is reached. Instead, it watches the file using fs.watch if available or fs.watchFile otherwise, and streams data as the file grows. 
+tail-stream has one function: ts.createReadStream which is like fs.createReadStream, but does not stop reading the file when end of file is reached. Instead, it watches the file using fs.watch if available or fs.watchFile otherwise, and streams data as the file grows. 
 
 If fs.watch is available, then it is used. If not, then fs.watchFile is used.
 
 # Options #
 
+* beginAt: Where to begin reading. Can be an offset in number of bytes or 'end' (default: 0).
 * endOnError: If set to true, stream will end if an error occurs (default: true).
 * detectTruncate: Perform truncate detections (default: true)
 * onTruncate: What to do truncate is detected. Set to 'end' to end the stream, or 'reset' to seek to the beginning of the file and resume reading (default: 'end').
@@ -36,6 +37,7 @@ The 'end' event is only emitted if an error is encountered and opts.endOnError i
 var ts = require('tail-stream');
 
 var tstream = ts.createReadStream('foo', {
+    beginAt: 0,
     detectTruncate: true,
     onTruncate: 'end',
     endOnError: true

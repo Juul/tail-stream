@@ -3,6 +3,7 @@
 var ts = require('../index.js');
 
 var tstream = ts.createReadStream('foo', {
+    beginAt: 0,
     detectTruncate: true,
     onTruncate: 'end', // or 'reset' to seek to beginning of file
     endOnError: true
@@ -10,21 +11,21 @@ var tstream = ts.createReadStream('foo', {
 });
 
 tstream.on('data', function(data) {
-    console.log("got data: " + data);
+    console.log("Got data: " + data);
 });
 
 tstream.on('eof', function() {
-    console.log("reached end of file");
+    console.log('Reached end of file. In a different terminal try: echo "wizards rule" >> foo');
 });
 
 tstream.on('truncate', function(newsize, oldsize) {
-    console.log("file truncated from: " + oldsize + " to " + newsize);
+    console.log("File truncated from: " + oldsize + " to " + newsize);
 });
 
 tstream.on('end', function() {
-    console.log("ended");
+    console.log("Ended");
 });
 
 tstream.on('error', function(err) {
-    console.log("error: " + err); 
+    console.log("Error: " + err); 
 });
