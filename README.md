@@ -1,39 +1,82 @@
 # About #
 
-Tail stream has one function: ts.createReadStream which is like fs.createReadStream, but does not stop reading the file when end of file is reached. Instead, it watches the file using fs.watch if available or fs.watchFile otherwise, and streams data as the file grows. The 'end' event is never emitted.
+Tail stream has one function: ts.createReadStream which is like fs.createReadStream, but does not stop reading the file when end of file is reached. Instead, it watches the file using fs.watch if available or fs.watchFile otherwise, and streams data as the file grows. 
 
-# Addition events #
+If fs.watch is available, then it is used. If not, then fs.watchFile is used.
+
+# Options #
+
+* endOnError: If set to true, stream will end if an error occurs (default: true).
+* detectTruncate: Perform truncate detections (default: true)
+* onTruncate: What to do truncate is detected. Set to 'end' to end the stream, or 'reset' to seek to the beginning of the file and resume reading (default: 'end').
+
+# Events #
+
+## error ##
+
+If opts.endOnError is set, then error events are only emitted if a handler has been registered for error events.
 
 ## eof ##
 
-'eof' is emitted whenever the end of file is encountered.
+eof events are emitted whenever the end of file is encountered. eof events can be emitted multiple times if someone is writing to the file slower than it is being read.
 
 ## truncate ##
 
-'truncate' is emitted whenever the filesize is changed to less than the previous file size. It sends along the new size and previous size as arguments.
+truncate events are emitted whenever the filesize is changed to less than the previous file size. It sends along the new size and previous size as arguments.
+
+truncate events are only emitted if opts.detectTruncate is set.
+
+## end ##
+
+The 'end' event is only emitted if an error is encountered and opts.endOnError is set, or if the file is truncated and opts.onTruncate is set to 'end'.
 
 # Example #
 
 ```
 var ts = require('tail-stream');
 
-var tstream = ts.createReadStream('foo');
+var tstream = ts.createReadStream('foo', {
+    detectTruncate: true,
+    onTruncate: 'end',
+    endOnError: true
+});
 
 tstream.on('data', function(data) {
     console.log("got data: " + data);
 });
 
-tstream.on('eog', function() {
+tstream.on('eof', function() {
     console.log("reached end of file");
 });
 
 tstream.on('truncate', function(newsize, oldsize) {
     console.log("file truncated from: " + oldsize + " to " + newsize);
 });
-```
-# Known bugs #
 
-The 'eof' events are emitted before the 'data' event that should preceed them.
+tstream.on('end', function() {
+    console.log("ended");
+});
+
+tstream.on('error', function(err) {
+    console.log("error: " + err); 
+});
+```
+
+# FAQ
+
+## What happen if the file is deleted? ##
+
+If endOnError is set, then the stream ends and if an event listener is registered for the error event, and error event i emitted.
+
+If endOnError is not set, then an error event is emittted, whether or not a handler is registered.
+
+## What happens if the file is moved/renamed ##
+
+If fs.watch is not available, then this is detected as a file deletion.
+
+If fs.watch _is_ available and truncate detections is enabled, then errors occur (and the stream is closed if endOnError is set).
+
+If fs.watch is available and truncate detection is _disabled_ then moving the file will not disrupt the stream.
 
 # License #
 

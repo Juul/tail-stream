@@ -2,91 +2,149 @@ var stream = require('stream');
 var util = require('util');
 var fs = require('fs');
 
-
 function TailStream(path, opts) {
     TailStream.super_.call(this, opts);
 
-    this.path = path;
-    this.opts = opts;
-    this.src = null;
     this.lastSize = null;
     this.bytesRead = 0;
     this.watching = false;
+    this.path = path;
+    this.buffer = Buffer(16 * 1024);
+
+    this.opts = {
+        detectTruncate: true,
+        onTruncate: 'end', // or 'reset' to seek to beginning of file
+        endOnError: true
+    };
+
+    var key;
+    for(key in opts) {
+        this.opts[key] = opts[key];
+    }
+
+    this.fd = fs.openSync(path, 'r');
+    this.dataAvailable = true;
 
     this.waitForMoreData = function() {
-        if(this.watching) {
+        if(this.watcher) {
             return;
         }
         if(fs.watch) {
-            fs.watch(this.path, {persistent: true}, function(event, filename) {
+            this.watcher = fs.watch(this.path, {persistent: true}, function(event, filename) {
                 if(event == 'change') {
-                    this.src = null;
+                    this.dataAvailable = true;
                     this.read(0);
                 }
             }.bind(this));
         } else {
-            fs.watchFile(this.path, {persistent:true, inverval: 500}, function(cur, prev) {
-                if(cur.mtime.getTime() > prev.mtime.getTime()) {
-                    this.src = null;
-                    this.read(0);
-                }
-
-            }.bind(this));
-
+            fs.watchFile(this.path, {persistent:true, inverval: 500}, this.watchFileCallback);
+            this.watcher = true;
         }
-        this.watching = true;
+    };
+
+    this.watchFileCallback = function(cur, prev) {
+        // was the file deleted?
+        if(!cur.dev && !cur.ino) {
+            if(this.opts.endOnError) {
+                this.end('EBADF');
+                if(this.listeners('error').length > 0) {
+                    this.emit('error', "File was deleted");
+                }
+            } else {
+                this.emit('error', "File was deleted");
+            }
+            return;
+        }
+        if(cur.mtime.getTime() > prev.mtime.getTime()) {
+            this.dataAvailable = true;
+            this.read(0);
+        }
+        
+    }.bind(this);
+
+    this.end = function(errCode) {
+        if(errCode != 'EBADF') {
+            fs.close(this.fd);
+        }
+        this.push(null);
+        if(this.watcher === true) {
+            fs.unwatchFile(this.path, this.watchFileCallback);
+        } else {
+            this.watcher.close();
+        }
     };
 
     this._read = function(size) {
 
-        if(!this.src) {
+        if(!this.dataAvailable) {
+            return this.push('');
+        }
             
+        if(this.opts.detectTruncate) {
             // check for truncate
-            var start = this.bytesRead;
-            var stat = fs.statSync(this.path);
+            fs.stat(this.path, this._readCont.bind(this));
+        } else {
+            this._readCont();
+        }
+    };
+    
+    this._readCont = function(err, stat) {
+        if(err) {
+            if(this.opts.endOnError) {
+                this.end(err.code);
+                if(this.listeners('error').length > 0) {
+                    this.emit('error', "Error during truncate detection: " + err);
+                }
+            } else {
+                this.emit('error', "Error during truncate detection: " + err);
+            }
+            stat = null;
+        }
+
+        if(stat) { // detect truncate
             if(!this.lastSize) {
                 this.lastSize = stat.size;
-                start = 0;
             } else {
                 if(stat.size < this.lastSize) {
                     this.emit('truncate', stat.size, this.lastSize);
-                    return this.push('');
+                    if(this.opts.onTruncate == 'reset') {
+                        this.bytesRead = 0;
+                    } else {
+                        this.end();
+                        return;
+                    }
                 }
             }
             this.lastSize = stat.size;
+        }
 
-            // don't do anything if there is nothing to read
-            if(stat.size == this.bytesRead) {
-                return this.push('');
+        fs.read(this.fd, this.buffer, 0, this.buffer.length, this.bytesRead, function(err, bytesRead, buffer) {
+            if(err) {
+                if(this.opts.endOnError) {
+                    this.end(err.code);
+                    if(this.listeners('error').length > 0) {
+                        this.emit('error', err);
+                    }
+                    return;
+                } else {
+                    this.waitForMoreData();
+                    this.push('');
+                    this.emit('error', err);
+                }
             }
 
-            this.src = fs.createReadStream(this.path, {
-                start: start
-            });
-
-            this.src.on('readable', function() {
-                this.read(0);
-            }.bind(this));
-
-            this.src.on('end', function() {
-                this.src.destroy();
+            if(bytesRead == 0) {
+                this.dataAvailable = false;
                 this.waitForMoreData();
                 this.push('');
                 this.emit('eof');
-            }.bind(this));
+                return;
+            }
 
-            this.src.on('error', function(err) {
-                this.src.destroy();
-                this.emit('error', err);
-            }.bind(this));
-        }
-        var data = this.src.read(size);
-        if(data) {
-            this.bytesRead += data.length;
-            this.push(data);
-        } else {
-            this.push('');
-        }
+            this.bytesRead += bytesRead;
+            this.push(this.buffer.slice(0, bytesRead));
+
+        }.bind(this));
     };
 }
 
