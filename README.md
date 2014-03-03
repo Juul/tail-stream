@@ -6,10 +6,10 @@ If fs.watch is available, then it is used. If not, then fs.watchFile is used.
 
 # Options #
 
-* beginAt: Where to begin reading. Can be an offset in number of bytes or 'end' (default: 0).
-* endOnError: If set to true, stream will end if an error occurs (default: true).
-* detectTruncate: Perform truncate detections (default: true)
-* onTruncate: What to do truncate is detected. Set to 'end' to end the stream, or 'reset' to seek to the beginning of the file and resume reading (default: 'end').
+* beginAt: Where to begin reading. This can be an offset in number of bytes or 'end' (default: 0).
+* endOnError: If set to true, the stream will end if an error occurs (default: true).
+* detectTruncate: Perform truncate detection (default: true)
+* onTruncate: What to do when truncate is detected. Set to 'end' to end the stream, or 'reset' to seek to the beginning of the file and resume reading (default: 'end').
 
 # Events #
 

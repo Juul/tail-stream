@@ -3,7 +3,7 @@
 var ts = require('../index.js');
 
 var tstream = ts.createReadStream('foo', {
-    beginAt: 0,
+    beginAt: 'end',
     detectTruncate: true,
     onTruncate: 'end', // or 'reset' to seek to beginning of file
     endOnError: true
