@@ -111,7 +111,7 @@ If the operating system does not have the /proc/self/fd folder, _and_ fs.watch i
 
 ### If onMove is 'stay' ###
 
-This always works as expected, but fs.watchFile is used when waiting for a replacement file to appear. Since fs.watchFile relies on stat polling, there can be a delay between when the replacement file appears and when it is reported. fs.watch is still used for when not waiting for a replacement file to appear.
+This always works as expected, but fs.watchFile is used when waiting for a replacement file to appear. Since fs.watchFile relies on stat polling, there can be a delay between when the replacement file appears and when it is reported. fs.watch is still used when not waiting for a replacement file to appear.
 
 # ToDo #
 
@@ -122,3 +122,6 @@ This always works as expected, but fs.watchFile is used when waiting for a repla
 
 License is [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
 
+# Appreciation #
+
+If you appreciate this library and you're feeling generous, then you can [tip me with recurring micropayments](https://www.gittip.com/juul/). This helps me spend all of my time making useful free and open source things :)
