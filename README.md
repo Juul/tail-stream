@@ -2,8 +2,6 @@
 
 tail-stream has one function: ts.createReadStream which is like fs.createReadStream, but does not stop reading the file when end of file is reached. Instead, it watches the file using fs.watch if available or fs.watchFile otherwise, and streams data as the file grows. 
 
-If fs.watch is available, then it is used. If not, then fs.watchFile is used.
-
 # Options #
 
 * beginAt: Where to begin reading. This can be an offset in number of bytes or 'end' (default: 0).
@@ -42,6 +40,8 @@ truncate events are emitted unless opts.detectTruncate is set to false.
 If opts.onMove is set to 'stay' and the original file was moved then the new 'replace' event is emitted when a new file appears at the old path of the original file.
 
 # Example #
+
+More examples available in the examples directory.
 
 ```
 var ts = require('tail-stream');
@@ -97,7 +97,7 @@ An 'eof' event is emitted. No other events are emitted.
 
 ### If onMove is 'follow' ###
 
-If the operating has the /proc/self/fd folder (only modern Linux I believe) then everything will work as expected.
+If the operating system has the /proc/self/fd folder (only modern Linux I believe) then everything will work as expected.
 
 If the operating system does not have the /proc/self/fd folder, but fs.watch is available, then the 'move' event callback will receive null instead of the new file path, and subsequent move events will receive null instead of both the old and new file paths. Also, if truncate detection is enabled it will stop functioning after move, meaning that subsequent truncates will only result in an eof event.
 
@@ -111,7 +111,7 @@ If the operating system does not have the /proc/self/fd folder, _and_ fs.watch i
 
 ### If onMove is 'stay' ###
 
-This always works as expected, but fs.watchFile is always used instead of fs.watch. Since fs.watchFile relies on stat polling, there can be a delay between the replacement file appears and it is noticed.
+This always works as expected, but fs.watchFile is used when waiting for a replacement file to appear. Since fs.watchFile relies on stat polling, there can be a delay between when the replacement file appears and it is reported. fs.watch is still used for when not waiting for a replacement file to appear.
 
 # ToDo #
 
