@@ -7,29 +7,39 @@ If fs.watch is available, then it is used. If not, then fs.watchFile is used.
 # Options #
 
 * beginAt: Where to begin reading. This can be an offset in number of bytes or 'end' (default: 0).
-* endOnError: If set to true, the stream will end if an error occurs (default: true).
 * detectTruncate: Perform truncate detection (default: true)
 * onTruncate: What to do when truncate is detected. Set to 'end' to end the stream, or 'reset' to seek to the beginning of the file and resume reading (default: 'end').
+* onMove: What to do when the file is moved/renamed. Can be 'error' to give an error, 'end' to end the stream, 'follow' to continue streaming the file, or 'stay' to wait for another file to appear at the file's old path and resume streaming from the new file when it appears (default: 'follow').
+* endOnError: If set to true, the stream will end if an error occurs (default: false).
+* useWatch: If true, fs.watch will be used if available, otherwise fs.watchFile will be used. If false, fs.watchFile will always be used (default: true).
 
 # Events #
 
 ## error ##
 
-If opts.endOnError is set, then error events are only emitted if a handler has been registered for error events.
+If opts.endOnError is set, then error events are never emitted. Only end events.
 
 ## eof ##
 
 eof events are emitted whenever the end of file is encountered. eof events can be emitted multiple times if someone is writing to the file slower than it is being read.
 
+## end ##
+
+The 'end' event is only emitted if an error is encountered and opts.endOnError is true, or if the file is truncated and opts.onTruncate is set to 'end'.
+
+## move ##
+
+move events are emitted if opts.onMove is set to either 'follow' or 'stay'. If the operating system has support for it, the event callback receives two arguments the old, pre-move absolute path of the file and the new, post-move absolute path of the file. For more information on operating system support, see the FAQ below.
+
 ## truncate ##
 
 truncate events are emitted whenever the filesize is changed to less than the previous file size. It sends along the new size and previous size as arguments.
 
-truncate events are only emitted if opts.detectTruncate is set.
+truncate events are emitted unless opts.detectTruncate is set to false.
 
-## end ##
+## replace ##
 
-The 'end' event is only emitted if an error is encountered and opts.endOnError is set, or if the file is truncated and opts.onTruncate is set to 'end'.
+If opts.onMove is set to 'stay' and the original file was moved then the new 'replace' event is emitted when a new file appears at the old path of the original file.
 
 # Example #
 
@@ -38,9 +48,10 @@ var ts = require('tail-stream');
 
 var tstream = ts.createReadStream('foo', {
     beginAt: 0,
+    onMove: 'follow',
     detectTruncate: true,
     onTruncate: 'end',
-    endOnError: true
+    endOnError: false
 });
 
 tstream.on('data', function(data) {
@@ -49,6 +60,10 @@ tstream.on('data', function(data) {
 
 tstream.on('eof', function() {
     console.log("reached end of file");
+});
+
+tstream.on('move', function(oldpath, newpath) {
+    console.log("file moved from: " + oldpath + " to " + newpath);
 });
 
 tstream.on('truncate', function(newsize, oldsize) {
@@ -64,21 +79,44 @@ tstream.on('error', function(err) {
 });
 ```
 
-# FAQ
+# FAQ #
+
+## How do I use this to follow a rotating log? ##
+
+You need to set the onMove option to 'stay'. Look at examples/log_rotate.js to see how it's done.
 
 ## What happens if the file is deleted? ##
 
-If endOnError is set, then the stream ends and if an event listener is registered for the error event, an error event is emitted.
+If endOnError is set, then the stream ends. If endOnError is not set, then an error event is emittted stating that the file was deleted.
 
-If endOnError is not set, then an error event is emittted, whether or not a handler is registered.
+## What happens if the file is changed but the length stays the same? ##
 
-## What happens if the file is moved/renamed ##
+An 'eof' event is emitted. No other events are emitted.
 
-If fs.watch is not available, then this is detected as a file deletion.
+## What happens if the file is moved/renamed? ##
 
-If fs.watch _is_ available and truncate detection is enabled, then errors occur (and the stream is closed if endOnError is set).
+### If onMove is 'follow' ###
 
-If fs.watch is available and truncate detection is _disabled_ then moving the file will not disrupt the stream.
+If the operating has the /proc/self/fd folder (only modern Linux I believe) then everything will work as expected.
+
+If the operating system does not have the /proc/self/fd folder, but fs.watch is available, then the 'move' event callback will receive null instead of the new file path, and subsequent move events will receive null instead of both the old and new file paths. Also, if truncate detection is enabled it will stop functioning after move, meaning that subsequent truncates will only result in an eof event.
+
+If the operating system does not have the /proc/self/fd folder, and fs.watch is _not_ available, then the move/rename is detected as a file deletion, resulting in an error event stating that the file was deleted.
+
+### If onMove is 'error' or 'end' ###
+
+If the operating system has the /proc/self/fd folder _or_ fs.watch is available, then everything works as expected.
+
+If the operating system does not have the /proc/self/fd folder, _and_ fs.watch is _not_ available, then the move/rename is detected as a file deletion, resulting in an error event stating that the file was deleted.
+
+### If onMove is 'stay' ###
+
+This always works as expected, but fs.watchFile is always used instead of fs.watch. Since fs.watchFile relies on stat polling, there can be a delay between the replacement file appears and it is noticed.
+
+# ToDo #
+
+* Implement unit tests.
+* Test on other operating systems.
 
 # License #
 

@@ -3,11 +3,10 @@
 var ts = require('../index.js');
 
 var tstream = ts.createReadStream('foo', {
-    beginAt: 'end',
+    beginAt: 0,
     detectTruncate: true,
     onTruncate: 'end', // or 'reset' to seek to beginning of file
-    endOnError: true
-
+    endOnError: false
 });
 
 tstream.on('data', function(data) {
@@ -19,7 +18,7 @@ tstream.on('eof', function() {
 });
 
 tstream.on('truncate', function(newsize, oldsize) {
-    console.log("File truncated from: " + oldsize + " to " + newsize);
+    console.log("File truncated from: " + oldsize + " to " + newsize + " bytes");
 });
 
 tstream.on('end', function() {
