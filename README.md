@@ -124,4 +124,4 @@ License is [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
 
 # Appreciation #
 
-If you appreciate this library and you're feeling generous, then you can [tip me with recurring micropayments](https://www.gittip.com/juul/). This helps me spend all of my time making useful free and open source things :)
+If you appreciate this library, then you can [tip me with recurring micro-donations on GitTip](https://www.gittip.com/juul/), or [tip me with one-off donations on Flattr](https://flattr.com/profile/juul). This helps me spend all of my time making useful free and open source things :)
