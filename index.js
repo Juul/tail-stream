@@ -10,7 +10,7 @@ function TailStream(filepath, opts) {
     this.bytesRead = 0;
     this.watching = false;
     this.path = path.resolve(filepath);
-    this.buffer = Buffer(16 * 1024);
+    this.buffer = new Buffer(16 * 1024);
 
     this.opts = {
         beginAt: 0,
@@ -31,10 +31,11 @@ function TailStream(filepath, opts) {
     this.firstRead = true;
     this.waitingForReappear = false;
 
-    this.getCurrentPath = function() {
+    this.getCurrentPath = function(filename) {
         try {
             return fs.readlinkSync('/proc/self/fd/'+this.fd);
         } catch(e) {
+            if(filename) return filename;
             return null;
         }
     };
@@ -101,7 +102,7 @@ function TailStream(filepath, opts) {
                     this.dataAvailable = true;
                     this.read(0);
                 } else if(event == 'rename') {
-                    var newpath = this.getCurrentPath();
+                    var newpath = this.getCurrentPath(filename);
                     this.move(newpath);
                 }
             }.bind(this));
@@ -141,7 +142,7 @@ function TailStream(filepath, opts) {
             this.dataAvailable = true;
             this.read(0);
         }
-        
+ 
     }.bind(this);
 
     this.end = function(errCode) {
@@ -161,7 +162,7 @@ function TailStream(filepath, opts) {
         if(!this.dataAvailable) {
             return this.push('');
         }
-            
+
         if(this.path && (this.opts.detectTruncate || (this.firstRead && (this.opts.beginAt == 'end')))) {
             // check for truncate
             fs.stat(this.path, this._readCont.bind(this));
@@ -169,7 +170,7 @@ function TailStream(filepath, opts) {
             this._readCont();
         }
     };
-    
+
     this._readCont = function(err, stat) {
         if(err) {
             if(err.code == 'ENOENT') {
@@ -190,7 +191,7 @@ function TailStream(filepath, opts) {
                 this.push('');
                 this.firstRead = false;
                 return;
-            } 
+            }
 
             // truncate detection
             if(!this.lastSize) {
