@@ -1,12 +1,12 @@
-
 var assert  = require('assert');
 var fs      = require('fs');
-var path    = require('path');
 
-var filePath = path.resolve('test', 'tmp', 'append');
-var newLine  = 'The rain in spain falls mainly on the plain\n';
+var filePath = process.env.TEST_FILE_PATH;
+var newLine  = process.env.TEST_LOG_LINE ||
+	           'you forget to set TEST_LOG_LINE\n';
 
 fs.appendFile(filePath, newLine, function (err) {
     assert.ifError(err);
-    // console.log('fileAppend -> fs.appendFile: ' + filePath);
+
+    process.send('fileAppend -> fs.appendFile: ' + filePath);
 });

@@ -1,9 +1,8 @@
-
 var assert  = require('assert');
 var fs      = require('fs');
 var path    = require('path');
 
-var filePath = path.resolve('test', 'tmp', 'truncate');
+var filePath = process.env.TEST_FILE_PATH;
 
 fs.truncate(filePath, 0, function (err) {
 	if (err) {
@@ -11,5 +10,6 @@ fs.truncate(filePath, 0, function (err) {
 	 	console.error(err);
 	 	return;
 	}
-	// console.log('fileTruncate -> fs.truncate: ' + filePath);
+
+    process.send('fileTruncate -> fs.truncate: ' + filePath);
 });
