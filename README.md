@@ -129,7 +129,7 @@ License is [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
 If you appreciate this library, then you can [tip me with recurring micro-donations on GitTip](https://www.gittip.com/juul/), or [tip me with one-off donations on Flattr](https://flattr.com/profile/juul). This helps me spend all of my time making useful free and open source things :)
 
 
-[ci-img]: https://travis-ci.org/msimerson/tail-stream.svg
-[ci-url]: https://travis-ci.org/msimerson/tail-stream)
+[ci-img]: https://travis-ci.org/Juul/tail-stream.svg
+[ci-url]: https://travis-ci.org/Juul/tail-stream)
 [npm-img]: https://nodei.co/npm/tail-stream.png
 [npm-url]: https://nodei.co/npm/tail-stream/
