@@ -20,5 +20,11 @@
     "email": "juul@sudomesh.org",
     "url": "https://sudoroom.org/wiki/User:Juul"
   },
-  "license": "GPLv3"
+  "license": "GPLv3",
+  "devDependencies": {
+    "mocha": "*"
+  },
+  "scripts": {
+    "test": "mocha"
+  }
 }
