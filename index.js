@@ -87,6 +87,12 @@ function TailStream(filepath, opts) {
         } else { // opts.onMove == 'follow
             this.path = newpath;
             this.emit('move', oldpath, newpath);
+            // if we were using watchFile, unwatch old file location and watch new file location
+            if(this.watcher === true) {
+                fs.unwatchFile(oldpath, this.watchFileCallback);
+                this.watcher = false;
+                this.waitForMoreData();
+            } 
         }
     };
 
