@@ -1,3 +1,6 @@
+[![NPM][npm-img]][npm-url]
+[![Build Status][ci-img]][ci-url]
+
 # About #
 
 tail-stream has one function: ts.createReadStream which is like fs.createReadStream, but does not stop reading the file when end of file is reached. Instead, it watches the file using fs.watch if available or fs.watchFile otherwise, and streams data as the file grows. 
@@ -97,7 +100,7 @@ An 'eof' event is emitted. No other events are emitted.
 
 ### If onMove is 'follow' ###
 
-If the operating system has the /proc/self/fd folder (only modern Linux I believe) then everything will work as expected.
+If the operating system has the /proc/self/fd folder (only modern Linux and *nix with procfs) then everything will work as expected.
 
 If the operating system does not have the /proc/self/fd folder, but fs.watch is available, then the 'move' event callback will receive null instead of the new file path, and subsequent move events will receive null instead of both the old and new file paths. Also, if truncate detection is enabled it will stop functioning after move, meaning that subsequent truncates will only result in an eof event.
 
@@ -115,7 +118,6 @@ This always works as expected, but fs.watchFile is used when waiting for a repla
 
 # ToDo #
 
-* Implement unit tests.
 * Test on other operating systems.
 
 # License #
@@ -125,3 +127,9 @@ License is [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
 # Appreciation #
 
 If you appreciate this library, then you can [tip me with recurring micro-donations on GitTip](https://www.gittip.com/juul/), or [tip me with one-off donations on Flattr](https://flattr.com/profile/juul). This helps me spend all of my time making useful free and open source things :)
+
+
+[ci-img]: https://travis-ci.org/Juul/tail-stream.svg
+[ci-url]: https://travis-ci.org/Juul/tail-stream)
+[npm-img]: https://nodei.co/npm/tail-stream.png
+[npm-url]: https://nodei.co/npm/tail-stream/
