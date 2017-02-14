@@ -32,6 +32,9 @@ function TailStream(filepath, opts) {
     this.waitingForReappear = false;
 
     this.getCurrentPath = function(filename) {
+        if (filename && !fs.existsSync('/proc')) {
+            return filename;
+        }
         try {
             return fs.readlinkSync('/proc/self/fd/'+this.fd);
         } catch(e) {
@@ -104,17 +107,25 @@ function TailStream(filepath, opts) {
         }
         if(this.opts.useWatch && !forceWatchFile) {
             this.watcher = fs.watch(this.path, {persistent: true}, function(event, filename) {
-                if(event == 'change') {
+                if(event === 'change') {
                     this.dataAvailable = true;
                     this.read(0);
-                } else if(event == 'rename') {
+                } else if(event === 'rename') {
                     var newpath = this.getCurrentPath(filename);
                     this.move(newpath);
                 }
             }.bind(this));
         } else {
-            fs.watchFile(this.path, {persistent:true, inverval: 500}, this.watchFileCallback);
-            this.watcher = true;
+            // On Mac OS X and Linux, watchFile doesn't report the (re)appearance of
+            // the file. Watch the enclosing dir and then compare the filename of events
+            this.watcher = fs.watch(path.dirname(this.path), {persistent: true}, function(event, filename) {
+                if (filename && path.basename(this.path) === filename) {
+                    this.fileReappeared();
+                }
+            }.bind(this));
+            // On Mac OS X & Linux (Docker), currently results in ENOENT error
+            // fs.watchFile(this.path, {persistent:true, inverval: 500}, this.watchFileCallback);
+            // this.watcher = true;
         }
     };
 
@@ -148,7 +159,7 @@ function TailStream(filepath, opts) {
             this.dataAvailable = true;
             this.read(0);
         }
- 
+
     }.bind(this);
 
     this.end = function(errCode) {
@@ -169,7 +180,9 @@ function TailStream(filepath, opts) {
             return this.push('');
         }
 
-        if(this.path && (this.opts.detectTruncate || (this.firstRead && (this.opts.beginAt == 'end')))) {
+        if(!this.path) return this._readCont();
+
+        if((this.opts.detectTruncate || (this.firstRead && (this.opts.beginAt == 'end')))) {
             // check for truncate
             fs.stat(this.path, this._readCont.bind(this));
         } else {
@@ -180,9 +193,11 @@ function TailStream(filepath, opts) {
     this._readCont = function(err, stat) {
         if(err) {
             if(err.code == 'ENOENT') {
-                this.error("File deleted", err.code);
+                if (this.opts.onMove !== 'follow') {
+                    this.error("File deleted", err.code);
+                }
             } else {
-                this.error("Error during truncate detection: " + err, err.code)
+                this.error("Error during truncate detection: " + err, err.code);
             }
             stat = null;
         }
@@ -236,7 +251,7 @@ function TailStream(filepath, opts) {
                 }
             }
 
-            if(bytesRead == 0) {
+            if(bytesRead === 0) {
                 this.dataAvailable = false;
                 this.waitForMoreData();
                 this.push('');
