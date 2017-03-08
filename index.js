@@ -55,6 +55,7 @@ function TailStream(filepath, opts) {
             this.watcher = null;
         }
         fs.close(this.fd);
+        this.fd = null;
         this.waitingForReappear = true;
         this.waitForMoreData(true);
     };
