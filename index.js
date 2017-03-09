@@ -49,10 +49,13 @@ function TailStream(filepath, opts) {
         // we will switch to fs.watchFile
         // until a file re-appears at this.path
         if(this.opts.useWatch) {
-            this.watcher.close();
+            if(this.watcher && this.watcher.close) {
+                this.watcher.close();
+            }
             this.watcher = null;
         }
         fs.close(this.fd);
+        this.fd = null;
         this.waitingForReappear = true;
         this.waitForMoreData(true);
     };
@@ -163,13 +166,17 @@ function TailStream(filepath, opts) {
     }.bind(this);
 
     this.end = function(errCode) {
-        if(errCode != 'EBADF') {
+        if(!this.fd) {
+            return false;
+        }
+        if(errCode != 'EBADF') { 
             fs.close(this.fd);
+            this.fd = null;
         }
         this.push(null);
         if(this.watcher === true) {
             fs.unwatchFile(this.path, this.watchFileCallback);
-        } else {
+        } else if(this.watcher && this.watcher.close) {
             this.watcher.close();
         }
     };
@@ -238,7 +245,9 @@ function TailStream(filepath, opts) {
             }
             this.firstRead = false;
         }
-
+        if(!this.fd) {
+            return false;
+        }
         fs.read(this.fd, this.buffer, 0, this.buffer.length, this.bytesRead, function(err, bytesRead, buffer) {
             if(err) {
                 if(this.opts.endOnError) {
@@ -273,5 +282,4 @@ module.exports = ts = {
     createReadStream: function(path, options) {
         return new TailStream(path, options);
     }
-
 };
