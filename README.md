@@ -120,6 +120,10 @@ This always works as expected, but fs.watchFile is used when waiting for a repla
 
 * Test on other operating systems.
 
+# Gotchas
+
+Fails on travis-ci for node v0.12 even though it succeeds on v0.10 and v6.10 and works on my local machine on v0.12 ¯\_(ツ)_/¯
+
 # License
 
 License is [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
