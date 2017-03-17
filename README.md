@@ -122,7 +122,7 @@ This always works as expected, but fs.watchFile is used when waiting for a repla
 
 # Gotchas
 
-Fails on travis-ci for node v0.12 even though it succeeds on v0.10 and v6.10 and works on my local machine on v0.12 ¯\_(ツ)_/¯
+Fails on travis-ci for node v0.12 even though it succeeds on v0.10 and v6.10 and works on my local machine on v0.12
 
 # License
 
