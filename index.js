@@ -54,8 +54,9 @@ function TailStream(filepath, opts) {
             }
             this.watcher = null;
         }
-        fs.close(this.fd);
-        this.fd = null;
+        fs.close(this.fd, function() {
+            this.fd = null;
+        });
         this.waitingForReappear = true;
         this.waitForMoreData(true);
     };
@@ -166,12 +167,10 @@ function TailStream(filepath, opts) {
     }.bind(this);
 
     this.end = function(errCode) {
-        if(!this.fd) {
-            return false;
-        }
-        if(errCode != 'EBADF') { 
-            fs.close(this.fd);
-            this.fd = null;
+        if(errCode != 'EBADF' && this.fd) { 
+            fs.close(this.fd, function() {
+                this.fd = null;
+            });
         }
         this.push(null);
         if(this.watcher === true) {
