@@ -13,6 +13,7 @@ tail-stream has one function: ts.createReadStream which is like fs.createReadStr
 * onMove: What to do when the file is moved/renamed. Can be 'error' to give an error, 'end' to end the stream, 'follow' to continue streaming the file, or 'stay' to wait for another file to appear at the file's old path and resume streaming from the new file when it appears (default: 'follow').
 * endOnError: If set to true, the stream will end if an error occurs (default: false).
 * useWatch: If true, fs.watch will be used if available, otherwise fs.watchFile will be used. If false, fs.watchFile will always be used (default: true).
+* waitForCreate: Set this to true if the watched file does not yet exist.
 
 # Events
 
