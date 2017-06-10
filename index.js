@@ -18,18 +18,28 @@ function TailStream(filepath, opts) {
         onMove: 'follow', // or 'end' or 'exit' or 'stay'
         onTruncate: 'end', // or 'reset' to seek to beginning of file
         endOnError: false,
-        useWatch: !!fs.watch
+        useWatch: !!fs.watch,
+        waitForCreate: false
     };
 
     var key;
     for(key in opts) {
         this.opts[key] = opts[key];
     }
-
-    this.fd = fs.openSync(this.path, 'r');
-    this.dataAvailable = true;
-    this.firstRead = true;
-    this.waitingForReappear = false;
+    
+    this._start = function() {
+        this.firstRead = true;
+        this.waitingForReappear = false;
+        try {
+            this.fd = fs.openSync(this.path, 'r');
+            this.dataAvailable = true;
+        } catch(e) {
+            if(!opts.waitForCreate) throw e;
+            this.fd = null;
+            this.dataAvailable = false;
+            this.waitForFileToReappear();
+        }
+    };
 
     this.getCurrentPath = function(filename) {
         if (filename && !fs.existsSync('/proc')) {
@@ -54,7 +64,7 @@ function TailStream(filepath, opts) {
             }
             this.watcher = null;
         }
-        fs.close(this.fd, function() {
+        if(this.fd !== null) fs.close(this.fd, function() {
             this.fd = null;
         });
         this.waitingForReappear = true;
@@ -272,6 +282,8 @@ function TailStream(filepath, opts) {
 
         }.bind(this));
     };
+
+    this._start();
 }
 
 util.inherits(TailStream, stream.Readable);
