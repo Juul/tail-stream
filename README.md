@@ -135,6 +135,6 @@ If you appreciate this library, then you can [support me with $1 per month on Pa
 
 
 [ci-img]: https://travis-ci.org/Juul/tail-stream.svg
-[ci-url]: https://travis-ci.org/Juul/tail-stream)
+[ci-url]: https://travis-ci.org/Juul/tail-stream
 [npm-img]: https://nodei.co/npm/tail-stream.png
 [npm-url]: https://nodei.co/npm/tail-stream/
