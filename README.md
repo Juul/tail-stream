@@ -129,11 +129,6 @@ Fails on travis-ci for node v0.12 even though it succeeds on v0.10 and v6.10 and
 
 License is [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
 
-# Appreciation
-
-If you appreciate this library, then you can [support me with $1 per month on Patreon](https://www.patreon.com/marcjuul). This helps me spend all of my time making useful free and open things :)
-
-
 [ci-img]: https://travis-ci.org/Juul/tail-stream.svg
 [ci-url]: https://travis-ci.org/Juul/tail-stream
 [npm-img]: https://nodei.co/npm/tail-stream.png
