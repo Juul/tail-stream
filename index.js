@@ -41,6 +41,10 @@ function TailStream(filepath, opts) {
         }
     };
 
+    this.destroy = () => {
+        this.end();
+    };
+
     this.getCurrentPath = function(filename) {
         if (filename && !fs.existsSync('/proc')) {
             return filename;
@@ -183,7 +187,7 @@ function TailStream(filepath, opts) {
             });
 			this.fd = null;
         }
-        this.push(null);
+
         if(this.watcher === true) {
             fs.unwatchFile(this.path, this.watchFileCallback);
         } else if(this.watcher && this.watcher.close) {
