@@ -10,7 +10,7 @@ function TailStream(filepath, opts) {
     this.bytesRead = 0;
     this.watching = false;
     this.path = path.resolve(filepath);
-    this.buffer = new Buffer(16 * 1024);
+    this.buffer = Buffer.alloc(16 * 1024);
 
     this.opts = {
         beginAt: 0,
