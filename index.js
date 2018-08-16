@@ -185,7 +185,7 @@ function TailStream(filepath, opts) {
             fs.close(this.fd, function() {
                 this.fd = null;
             });
-			this.fd = null;
+            this.fd = null;
         }
 
         if(this.watcher === true) {
