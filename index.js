@@ -34,7 +34,7 @@ function TailStream(filepath, opts) {
             this.fd = fs.openSync(this.path, 'r');
             this.dataAvailable = true;
         } catch(e) {
-            if(!opts.waitForCreate) throw e;
+            if(!this.opts.waitForCreate) throw e;
             this.fd = null;
             this.dataAvailable = false;
             this.waitForFileToReappear();
