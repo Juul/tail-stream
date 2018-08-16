@@ -10,7 +10,7 @@ function TailStream(filepath, opts) {
     this.bytesRead = 0;
     this.watching = false;
     this.path = path.resolve(filepath);
-    this.buffer = new Buffer(16 * 1024);
+    this.buffer = Buffer.alloc(16 * 1024);
 
     this.opts = {
         beginAt: 0,
@@ -39,6 +39,10 @@ function TailStream(filepath, opts) {
             this.dataAvailable = false;
             this.waitForFileToReappear();
         }
+    };
+
+    this.destroy = () => {
+        this.end();
     };
 
     this.getCurrentPath = function(filename) {
@@ -183,7 +187,7 @@ function TailStream(filepath, opts) {
             });
 			this.fd = null;
         }
-        this.push(null);
+
         if(this.watcher === true) {
             fs.unwatchFile(this.path, this.watchFileCallback);
         } else if(this.watcher && this.watcher.close) {
