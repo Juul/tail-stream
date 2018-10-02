@@ -10,7 +10,6 @@ function TailStream(filepath, opts) {
     this.bytesRead = 0;
     this.watching = false;
     this.path = path.resolve(filepath);
-    this.buffer = Buffer.alloc(16 * 1024);
 
     this.opts = {
         beginAt: 0,
@@ -22,8 +21,7 @@ function TailStream(filepath, opts) {
         waitForCreate: false
     };
 
-    var key;
-    for(key in opts) {
+    for(var key in opts) {
         this.opts[key] = opts[key];
     }
     
@@ -196,13 +194,14 @@ function TailStream(filepath, opts) {
     };
 
     this._read = function(size) {
-
         if(!this.dataAvailable) {
             return this.push('');
         }
 
-        if(!this.path) return this._readCont();
+        if(!this.path) {
+            return this._readCont();
 
+        }
         if((this.opts.detectTruncate || (this.firstRead && (this.opts.beginAt == 'end')))) {
             // check for truncate
             fs.stat(this.path, this._readCont.bind(this));
@@ -224,7 +223,6 @@ function TailStream(filepath, opts) {
         }
 
         if(stat) {
-
             // seek to end of file
             if(this.firstRead && (this.opts.beginAt == 'end')) {
                 this.bytesRead = stat.size;
@@ -262,7 +260,8 @@ function TailStream(filepath, opts) {
         if(!this.fd) {
             return false;
         }
-        fs.read(this.fd, this.buffer, 0, this.buffer.length, this.bytesRead, function(err, bytesRead, buffer) {
+        var buffer = Buffer.alloc(16 * 1024);
+        fs.read(this.fd, buffer, 0, buffer.length, this.bytesRead, function(err, bytesRead, buffer) {
             if(err) {
                 if(this.opts.endOnError) {
                     this.end(err.code);
@@ -283,18 +282,15 @@ function TailStream(filepath, opts) {
             }
 
             this.bytesRead += bytesRead;
-            this.push(this.buffer.slice(0, bytesRead));
-
+            this.push(buffer.slice(0, bytesRead));
         }.bind(this));
     };
 
     this._start();
 }
-
 util.inherits(TailStream, stream.Readable);
 
 module.exports = ts = {
-
     createReadStream: function(path, options) {
         return new TailStream(path, options);
     }
