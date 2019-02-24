@@ -38,9 +38,9 @@ function TailStream(filepath, opts) {
             this.waitForFileToReappear();
         }
     };
-
-    this.destroy = () => {
+    this._destroy = () => {
         this.end();
+        this.emit('close');
     };
 
     this.getCurrentPath = function(filename) {
@@ -66,9 +66,10 @@ function TailStream(filepath, opts) {
             }
             this.watcher = null;
         }
-        if(this.fd !== null) fs.close(this.fd, function() {
+        if(this.fd !== null) {
+            fs.closeSync(this.fd);
             this.fd = null;
-        });
+        }
         this.waitingForReappear = true;
         this.waitForMoreData(true);
     };
@@ -180,9 +181,7 @@ function TailStream(filepath, opts) {
 
     this.end = function(errCode) {
         if(errCode != 'EBADF' && this.fd) { 
-            fs.close(this.fd, function() {
-                this.fd = null;
-            });
+            fs.closeSync(this.fd);
             this.fd = null;
         }
 
@@ -197,7 +196,6 @@ function TailStream(filepath, opts) {
         if(!this.dataAvailable) {
             return this.push('');
         }
-
         if(!this.path) {
             return this._readCont();
 
@@ -282,7 +280,9 @@ function TailStream(filepath, opts) {
             }
 
             this.bytesRead += bytesRead;
-            this.push(buffer.slice(0, bytesRead));
+            if(!this.push(buffer.slice(0, bytesRead))) {
+                //console.log('[' + readId + '] stop, maybe?');
+            }
         }.bind(this));
     };
 
