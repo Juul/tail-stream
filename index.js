@@ -38,9 +38,10 @@ function TailStream(filepath, opts) {
             this.waitForFileToReappear();
         }
     };
-    this._destroy = () => {
+    this._destroy = (err, cb) => {
         this.end();
-        this.emit('close');
+        this.push(null);
+        cb(err);
     };
 
     this.getCurrentPath = function(filename) {
@@ -83,8 +84,6 @@ function TailStream(filepath, opts) {
         this.waitingForReappear = false;
         // switch back to fs.watch if supported
         if(this.opts.useWatch) {
-            fs.unwatchFile(this.path, this.watchFileCallback);
-            this.watcher = null;
             this.waitForMoreData();
         }
         this.emit('replace');
@@ -107,23 +106,17 @@ function TailStream(filepath, opts) {
         } else { // opts.onMove == 'follow
             this.path = newpath;
             this.emit('move', oldpath, newpath);
-            // if we were using watchFile, unwatch old file location and watch new file location
-            if(this.watcher === true) {
-                fs.unwatchFile(oldpath, this.watchFileCallback);
-                this.watcher = false;
-                this.waitForMoreData();
-            } 
+            this.waitForMoreData();
         }
     };
 
-    // if forceWatchFile is true,
-    // then fs.watchFile is always used instead of fs.watch
+    // If forceWatchFile is true always use fs.watchFile instead of fs.watch
     this.waitForMoreData = function(forceWatchFile) {
-        if(this.watcher) {
+        if(!!this.watcher) {
             return;
         }
         if(this.opts.useWatch && !forceWatchFile) {
-            this.watcher = fs.watch(this.path, {persistent: true}, function(event, filename) {
+            this.watcher = fs.watch(this.path, {persistent: true}, (event, filename) => {
                 if(event === 'change') {
                     this.dataAvailable = true;
                     this.read(0);
@@ -131,18 +124,15 @@ function TailStream(filepath, opts) {
                     var newpath = this.getCurrentPath(filename);
                     this.move(newpath);
                 }
-            }.bind(this));
+            });
         } else {
             // On Mac OS X and Linux, watchFile doesn't report the (re)appearance of
             // the file. Watch the enclosing dir and then compare the filename of events
-            this.watcher = fs.watch(path.dirname(this.path), {persistent: true}, function(event, filename) {
-                if (filename && path.basename(this.path) === filename) {
+            this.watcher = fs.watch(path.dirname(this.path), {persistent: true}, (event, filename) => {
+                if(filename && path.basename(this.path) === filename) {
                     this.fileReappeared();
                 }
-            }.bind(this));
-            // On Mac OS X & Linux (Docker), currently results in ENOENT error
-            // fs.watchFile(this.path, {persistent:true, inverval: 500}, this.watchFileCallback);
-            // this.watcher = true;
+            });
         }
     };
 
@@ -177,18 +167,20 @@ function TailStream(filepath, opts) {
             this.read(0);
         }
 
-    }.bind(this);
+    };
 
     this.end = function(errCode) {
         if(errCode != 'EBADF' && this.fd) { 
             fs.closeSync(this.fd);
             this.fd = null;
+		}
+		if(this.fd !== null) {
+            fs.closeSync(this.fd);
+            this.fd = null;
         }
-
-        if(this.watcher === true) {
-            fs.unwatchFile(this.path, this.watchFileCallback);
-        } else if(this.watcher && this.watcher.close) {
+		if(this.watcher && this.watcher.close) {
             this.watcher.close();
+            this.watcher = null;
         }
     };
 
@@ -196,13 +188,16 @@ function TailStream(filepath, opts) {
         if(!this.dataAvailable) {
             return this.push('');
         }
+
         if(!this.path) {
             return this._readCont();
 
         }
         if((this.opts.detectTruncate || (this.firstRead && (this.opts.beginAt == 'end')))) {
             // check for truncate
-            fs.stat(this.path, this._readCont.bind(this));
+            fs.stat(this.path, (err, stat) => {
+                this._readCont.call(this, err, stat);
+            });
         } else {
             this._readCont();
         }
@@ -259,7 +254,7 @@ function TailStream(filepath, opts) {
             return false;
         }
         var buffer = Buffer.alloc(16 * 1024);
-        fs.read(this.fd, buffer, 0, buffer.length, this.bytesRead, function(err, bytesRead, buffer) {
+        fs.read(this.fd, buffer, 0, buffer.length, this.bytesRead, (err, bytesRead) => {
             if(err) {
                 if(this.opts.endOnError) {
                     this.end(err.code);
@@ -281,9 +276,9 @@ function TailStream(filepath, opts) {
 
             this.bytesRead += bytesRead;
             if(!this.push(buffer.slice(0, bytesRead))) {
-                //console.log('[' + readId + '] stop, maybe?');
+                // TDOD: Maybe something should be done of the downstream consumer returns false?
             }
-        }.bind(this));
+        });
     };
 
     this._start();
