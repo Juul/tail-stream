@@ -28,24 +28,26 @@ function TailStream(filepath, opts) {
     this._start = function() {
         this.firstRead = true;
         this.waitingForReappear = false;
-        try {
-            this.fd = fs.openSync(this.path, 'r');
-            this.dataAvailable = true;
-        } catch(e) {
-            if(!this.opts.waitForCreate) throw e;
-            this.fd = null;
-            this.dataAvailable = false;
-            this.waitForFileToReappear();
-        }
+        fs.open(this.path, 'r', (err, fd) => {
+            if(err) {
+                if(!this.opts.waitForCreate) { throw e; }
+                this.fd = null;
+                this.dataAvailable = false;
+                this.waitForFileToReappear();
+            }
+            else {
+                this.fd = fd;
+                this.dataAvailable = true;
+            }
+        });
     };
     this._destroy = (err, cb) => {
         this.end();
-        this.push(null);
         cb(err);
     };
 
     this.getCurrentPath = function(filename) {
-        if (filename && !fs.existsSync('/proc')) {
+        if(filename && !fs.existsSync('/proc')) {
             return filename;
         }
         try {
@@ -67,9 +69,8 @@ function TailStream(filepath, opts) {
             }
             this.watcher = null;
         }
-        if(this.fd !== null) {
-            fs.closeSync(this.fd);
-            this.fd = null;
+        if(this.fd) {
+            this.fd = fs.closeSync(this.fd);
         }
         this.waitingForReappear = true;
         this.waitForMoreData(true);
@@ -112,7 +113,7 @@ function TailStream(filepath, opts) {
 
     // If forceWatchFile is true always use fs.watchFile instead of fs.watch
     this.waitForMoreData = function(forceWatchFile) {
-        if(!!this.watcher) {
+        if(this.watcher) {
             return;
         }
         if(this.opts.useWatch && !forceWatchFile) {
@@ -170,16 +171,16 @@ function TailStream(filepath, opts) {
     };
 
     this.end = function(errCode) {
-        if(errCode != 'EBADF' && this.fd) { 
-            fs.closeSync(this.fd);
-            this.fd = null;
-		}
-		if(this.fd !== null) {
-            fs.closeSync(this.fd);
-            this.fd = null;
+        this.dataAvailable = false;
+        this.closed = true;
+        if(this.fd) {
+            this.fd = fs.closeSync(this.fd);
         }
-		if(this.watcher && this.watcher.close) {
-            this.watcher.close();
+        this.push(null);
+        if(this.watcher) {
+            if(this.watcher.close) {
+                this.watcher.close();
+            }
             this.watcher = null;
         }
     };
@@ -191,7 +192,6 @@ function TailStream(filepath, opts) {
 
         if(!this.path) {
             return this._readCont();
-
         }
         if((this.opts.detectTruncate || (this.firstRead && (this.opts.beginAt == 'end')))) {
             // check for truncate
@@ -273,10 +273,11 @@ function TailStream(filepath, opts) {
                 this.emit('eof');
                 return;
             }
-
-            this.bytesRead += bytesRead;
-            if(!this.push(buffer.slice(0, bytesRead))) {
-                // TDOD: Maybe something should be done of the downstream consumer returns false?
+            if(!this.destroyed) {
+                this.bytesRead += bytesRead;
+                if(!this.push(buffer.slice(0, bytesRead))) {
+                    // TDOD: Maybe something should be done of the downstream consumer returns false?
+                }
             }
         });
     };
