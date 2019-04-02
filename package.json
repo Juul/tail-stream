@@ -1,6 +1,6 @@
 {
   "name": "tail-stream",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Like 'tail -f' but a stream.",
   "main": "index.js",
   "repository": {
