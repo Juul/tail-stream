@@ -6,6 +6,7 @@ var fs = require('fs');
 function TailStream(filepath, opts) {
     TailStream.super_.call(this, opts);
 
+    this.dataAvailable = false;
     this.lastSize = null;
     this.bytesRead = 0;
     this.watching = false;
@@ -38,6 +39,7 @@ function TailStream(filepath, opts) {
             else {
                 this.fd = fd;
                 this.dataAvailable = true;
+                this._read();
             }
         });
     };
